@@ -1,0 +1,32 @@
+from typing import Dict, Any
+from playwright.async_api import Page
+
+from models.page import Page as PageModel
+from parser.page_parser import PageParser
+
+
+async def get_page_info(page: Page) -> Dict[str, Any]:
+    """
+    Get structured information about the current page
+    
+    Args:
+        page: Playwright page instance
+        
+    Returns:
+        Dict with page information or error
+    """
+    try:
+        parser = PageParser(page)
+        page_info = await parser.parse_page()
+        
+        return {
+            "success": True,
+            "page": page_info.model_dump(),
+            "message": f"Successfully extracted page info from: {page_info.url}"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error getting page info: {str(e)}"
+        }
