@@ -11,17 +11,12 @@ class BrowserManager:
         self._context: Optional[BrowserContext] = None
         self._page: Optional[Page] = None
         
-    async def start(self, headless: bool = False):
+    async def start(self):
         """Start browser instance"""
         self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(
-            headless=headless,
-            args=['--start-maximized']
-        )
+        self._browser = await self._playwright.chromium.launch(headless=False        )
         self._context = await self._browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
+            viewport={'width': 1920, 'height': 1080} )
         self._page = await self._context.new_page()
         self._page.set_default_timeout(30000)
         

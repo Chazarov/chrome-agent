@@ -30,7 +30,7 @@ async def main():
     try:
         # Start browser
         print("📱 Запуск браузера...")
-        await browser_manager.start(headless=False)
+        await browser_manager.start()
         print("✓ Браузер запущен\n")
         
         # Create agent graph
