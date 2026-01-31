@@ -1,6 +1,10 @@
 from typing import Dict, Any
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 
+from agent.debug_tools import log_error
+from exceptions.tool_execution import ElementNotFoundError
+from exceptions.unknown_error import UnknownError
+
 
 async def click_button(page: Page, selector: str) -> Dict[str, Any]:
     """
@@ -36,12 +40,10 @@ async def click_button(page: Page, selector: str) -> Dict[str, Any]:
         }
         
     except PlaywrightTimeout:
-        return {
-            "success": False,
-            "message": f"Timeout: Could not find or click button with selector: {selector}"
-        }
+        err = ElementNotFoundError(selector, timeout=5)
+        log_error(err)
+        raise err
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error clicking button: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e

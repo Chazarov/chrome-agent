@@ -1,6 +1,10 @@
 from typing import Dict, Any, Literal
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 
+from agent.debug_tools import log_error
+from exceptions.tool_execution import ToolExecutionError, ElementNotFoundError
+from exceptions.unknown_error import UnknownError
+
 
 async def scroll_page(
     page: Page, 
@@ -34,10 +38,9 @@ async def scroll_page(
         }
         
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error scrolling: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e
 
 
 async def scroll_to_element(page: Page, selector: str) -> Dict[str, Any]:
@@ -62,12 +65,10 @@ async def scroll_to_element(page: Page, selector: str) -> Dict[str, Any]:
         }
         
     except PlaywrightTimeout:
-        return {
-            "success": False,
-            "message": f"Timeout: Could not find element with selector: {selector}"
-        }
+        err = ElementNotFoundError(selector, timeout=5)
+        log_error(err)
+        raise err
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error scrolling to element: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e

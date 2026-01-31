@@ -1,6 +1,10 @@
 from typing import Dict, Any
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 
+from agent.debug_tools import log_error
+from exceptions.tool_execution import NavigationTimeoutError
+from exceptions.unknown_error import UnknownError
+
 
 async def navigate(page: Page, url: str) -> Dict[str, Any]:
     """
@@ -34,15 +38,13 @@ async def navigate(page: Page, url: str) -> Dict[str, Any]:
         }
         
     except PlaywrightTimeout:
-        return {
-            "success": False,
-            "message": f"Timeout: Could not load page: {url}"
-        }
+        err = NavigationTimeoutError(url)
+        log_error(err)
+        raise err
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error navigating to {url}: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e
 
 
 async def go_back(page: Page) -> Dict[str, Any]:
@@ -65,7 +67,6 @@ async def go_back(page: Page) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error going back: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e

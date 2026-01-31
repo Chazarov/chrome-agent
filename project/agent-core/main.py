@@ -1,25 +1,26 @@
 import asyncio
-import os
-from dotenv import load_dotenv
 
+from config import config
 from parser.browser_manager import BrowserManager
 from agent.graph import create_agent_graph
 from database.service import DatabaseService
 from cli.interface import CLIInterface
+from exceptions.domain_error import DomainError
 
 
 async def main():
     """Main entry point for the Chrome Agent"""
     
-    # Load environment variables
-    load_dotenv()
-    
-    # Check for API key
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        print("\n❌ Ошибка: GROQ_API_KEY не найден в переменных окружения.")
-        print("Создайте файл .env и добавьте: GROQ_API_KEY=your_key_here\n")
+    # Validate configuration
+    try:
+        config.validate()
+    except ValueError as e:
+        print(f"\n❌ Ошибка конфигурации: {e}\n")
         return
+    
+    # Debug mode info
+    if config.is_debug():
+        print(f"\n🔧 DEBUG MODE: {config}\n")
     
     print("\n🚀 Запуск Chrome Agent...")
     
@@ -34,7 +35,7 @@ async def main():
         print("✓ Браузер запущен\n")
         
         # Create agent graph
-        agent_graph = create_agent_graph(browser_manager.page, api_key)
+        agent_graph = create_agent_graph(browser_manager.page, config.groq_api_key)
         
         # Start CLI
         cli = CLIInterface(db_service)
@@ -42,6 +43,9 @@ async def main():
         
     except KeyboardInterrupt:
         print("\n\n⚠ Получен сигнал прерывания...")
+    except DomainError as e:
+        print(f"\n❌ {e.error_reason}")
+        print(f"💡 {e.proposed_fix}\n")
     except Exception as e:
         print(f"\n❌ Критическая ошибка: {e}\n")
     finally:

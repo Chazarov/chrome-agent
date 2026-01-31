@@ -1,8 +1,10 @@
 from typing import Dict, Any
 from playwright.async_api import Page
 
+from agent.debug_tools import log_error
 from models.page import Page as PageModel
 from parser.page_parser import PageParser
+from exceptions.unknown_error import UnknownError
 
 
 async def get_page_info(page: Page) -> Dict[str, Any]:
@@ -26,7 +28,6 @@ async def get_page_info(page: Page) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error getting page info: {str(e)}"
-        }
+        err = UnknownError(e)
+        log_error(err)
+        raise err from e

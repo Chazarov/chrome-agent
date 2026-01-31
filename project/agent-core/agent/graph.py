@@ -4,9 +4,12 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import SystemMessage, HumanMessage
 from playwright.async_api import Page
 
+from config import config
 from .state import AgentState
 from .llm import get_llm
 from .tools_config import create_agent_tools
+from .debug_tools import print_llm_response, log_error
+from exceptions.function_call_format import FunctionCallFormatError
 
 
 SYSTEM_PROMPT = """You are a browser automation agent. Your job is to help users complete tasks on the web.
@@ -65,8 +68,21 @@ def create_agent_graph(page: Page, api_key: str):
         if len(messages) == 1:
             messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
         
-        # Call LLM
-        response = await llm_with_tools.ainvoke(messages)
+        # Call LLM with error handling for malformed function calls
+        try:
+            response = await llm_with_tools.ainvoke(messages)
+            
+            if config.is_debug():
+                print_llm_response(response)
+                
+        except Exception as e:
+            error_str = str(e)
+            if "400" in error_str and "Failed to call a function" in error_str:
+                err = FunctionCallFormatError(details=error_str)
+                log_error(err)
+                raise err from e
+            raise
+        
         
         return {
             "messages": [response],

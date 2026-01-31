@@ -8,6 +8,14 @@ from tools.navigate import navigate, go_back
 from tools.type_text import type_text, fill_input
 from tools.get_page_info import get_page_info
 from tools.scroll import scroll_page, scroll_to_element
+from .tool_schemas import (
+    NavigateInput,
+    ClickButtonInput,
+    FillInputArgs,
+    ScrollPageInput,
+    GetPageInfoInput,
+    GoBackInput
+)
 
 
 def create_agent_tools(page: Page) -> List[StructuredTool]:
@@ -71,32 +79,38 @@ def create_agent_tools(page: Page) -> List[StructuredTool]:
         StructuredTool.from_function(
             coroutine=_navigate,
             name="navigate",
-            description="Navigate to a URL. Input should be the URL string."
+            description="Navigate to a URL. Input should be the URL string.",
+            args_schema=NavigateInput
         ),
         StructuredTool.from_function(
             coroutine=_get_page,
             name="get_page_info",
-            description="Get information about the current page including buttons, links, and text content. Use this first to understand what's on the page."
+            description="Get information about the current page including buttons, links, and text content. Use this first to understand what's on the page.",
+            args_schema=GetPageInfoInput
         ),
         StructuredTool.from_function(
             coroutine=_click,
             name="click_button",
-            description="Click a button or clickable element. Input should be the CSS selector of the element."
+            description="Click a button or clickable element. Input should be the CSS selector of the element.",
+            args_schema=ClickButtonInput
         ),
         StructuredTool.from_function(
             coroutine=_fill,
             name="fill_input",
-            description="Fill an input field (clears first). Input format: selector and text as separate parameters."
+            description="Fill an input field (clears first). Input format: selector and text as separate parameters.",
+            args_schema=FillInputArgs
         ),
         StructuredTool.from_function(
             coroutine=_scroll,
             name="scroll_page",
-            description="Scroll the page. Input should be 'up', 'down', 'top', or 'bottom'."
+            description="Scroll the page. Input should be 'up', 'down', 'top', or 'bottom'.",
+            args_schema=ScrollPageInput
         ),
         StructuredTool.from_function(
             coroutine=_go_back,
             name="go_back",
-            description="Navigate back in browser history."
+            description="Navigate back in browser history.",
+            args_schema=GoBackInput
         ),
     ]
     

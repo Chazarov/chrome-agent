@@ -1,28 +1,29 @@
-import os
 from typing import Optional
 from langchain_groq import ChatGroq
 from langchain_core.language_models import BaseChatModel
 
+from config import config
+
 
 def get_llm(api_key: Optional[str] = None) -> BaseChatModel:
     """
-    Initialize Groq LLM with Qwen2.5-VL-7B model
+    Initialize Groq LLM
     
     Args:
-        api_key: Groq API key (defaults to GROQ_API_KEY env var)
+        api_key: Groq API key (defaults to config.groq_api_key)
         
     Returns:
         Initialized ChatGroq instance
     """
     if api_key is None:
-        api_key = os.getenv("GROQ_API_KEY")
+        api_key = config.groq_api_key
         
     if not api_key:
-        raise ValueError("GROQ_API_KEY not found in environment variables or parameters")
+        raise ValueError("GROQ_API_KEY not found in configuration")
     
     return ChatGroq(
-        model="llama-3.3-70b-versatile",  # Using available model instead of Qwen
+        model=config.agent_model,
         api_key=api_key,
-        temperature=0.7,
-        max_tokens=2048
+        temperature=config.agent_temperature,
+        max_tokens=config.agent_max_tokens
     )

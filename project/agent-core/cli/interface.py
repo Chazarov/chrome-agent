@@ -1,11 +1,18 @@
 import asyncio
 from typing import Optional
 from datetime import datetime
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
+from config import config
+from agent.debug_tools import log_error
 from models.session import Session, SessionStatus
 from database.service import DatabaseService
 from agent.state import AgentState
+from exceptions.tool_execution import ToolExecutionError
+from exceptions.browser_closed import BrowserClosedError
+from exceptions.function_call_format import FunctionCallFormatError
+from exceptions.domain_error import DomainError
+from exceptions.unknown_error import UnknownError
 
 
 class CLIInterface:
@@ -141,60 +148,149 @@ class CLIInterface:
             "error": None
         }
         
-        # Run agent
-        try:
-            step_count = 0
-            async for event in agent_graph.astream(initial_state):
-                step_count += 1
-                
-                # Extract node name and state
-                for node_name, node_state in event.items():
-                    if node_name == "agent":
-                        last_message = node_state["messages"][-1]
-                        
-                        # Check for tool calls
-                        if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-                            for tool_call in last_message.tool_calls:
-                                tool_name = tool_call.get("name", "unknown")
-                                print(f"  → Вызов инструмента: {tool_name}")
-                        
-                        # Check for text response
-                        if hasattr(last_message, "content") and last_message.content:
-                            if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
-                                print(f"\n💬 Агент: {last_message.content}\n")
-                                
-                                # Save assistant message
-                                self.db_service.save_message(
-                                    self.current_session.id,
-                                    "assistant",
-                                    last_message.content
-                                )
+        # Run agent with retry logic for recoverable errors
+        MAX_RETRIES = config.agent_max_retries
+        retry_count = 0
+        current_state = initial_state
+        
+        while retry_count <= MAX_RETRIES:
+            try:
+                step_count = 0
+                async for event in agent_graph.astream(current_state):
+                    step_count += 1
                     
-                    elif node_name == "tools":
-                        # Tool execution results
-                        if "messages" in node_state:
-                            for msg in node_state["messages"]:
-                                if hasattr(msg, "content"):
-                                    print(f"  ✓ Результат: {msg.content[:100]}...")
+                    # Extract node name and state
+                    for node_name, node_state in event.items():
+                        if node_name == "agent":
+                            last_message = node_state["messages"][-1]
+                            
+                            # Check for tool calls
+                            if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+                                for tool_call in last_message.tool_calls:
+                                    tool_name = tool_call.get("name", "unknown")
+                                    print(f"  → Вызов инструмента: {tool_name}")
+                            
+                            # Check for text response
+                            if hasattr(last_message, "content") and last_message.content:
+                                if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
+                                    print(f"\n💬 Агент: {last_message.content}\n")
+                                    
+                                    # Save assistant message
+                                    self.db_service.save_message(
+                                        self.current_session.id,
+                                        "assistant",
+                                        last_message.content
+                                    )
+                        
+                        elif node_name == "tools":
+                            # Tool execution results
+                            if "messages" in node_state:
+                                for msg in node_state["messages"]:
+                                    if hasattr(msg, "content"):
+                                        print(f"  ✓ Результат: {msg.content[:100]}...")
+                    
+                    # Prevent infinite loops
+                    if step_count > config.agent_max_steps:
+                        print(f"\n⚠ Достигнут лимит шагов ({config.agent_max_steps}). Остановка.\n")
+                        break
                 
-                # Prevent infinite loops
-                if step_count > 50:
-                    print("\n⚠ Достигнут лимит шагов (50). Остановка.\n")
+                print("\n✓ Задача завершена.\n")
+                break
+                
+            except ToolExecutionError as e:
+                retry_count += 1
+                if retry_count > MAX_RETRIES:
+                    print(f"\n❌ Превышен лимит попыток ({MAX_RETRIES})")
+                    print(f"❌ Ошибка: {e.error_reason}\n")
+                    
+                    self.db_service.save_message(
+                        self.current_session.id,
+                        "system",
+                        f"Failed after {MAX_RETRIES} attempts: {e.error_reason}"
+                    )
+                    self.db_service.update_session_status(
+                        self.current_session.id,
+                        SessionStatus.FAILED
+                    )
                     break
-            
-            print("\n✓ Задача завершена.\n")
-            
-        except Exception as e:
-            error_msg = f"Ошибка при выполнении: {str(e)}"
-            print(f"\n❌ {error_msg}\n")
-            
-            self.db_service.save_message(
-                self.current_session.id,
-                "system",
-                error_msg
-            )
-            
-            self.db_service.update_session_status(
-                self.current_session.id,
-                SessionStatus.FAILED
-            )
+                
+                # Add error to context and let agent retry
+                error_message = (
+                    f"Tool execution failed: {e.error_reason}\n"
+                    f"Suggested fix: {e.proposed_fix}\n"
+                    f"Attempt {retry_count}/{MAX_RETRIES}. Try alternative approach."
+                )
+                
+                current_state["messages"].append(SystemMessage(content=error_message))
+                
+                print(f"\n⚠️ Попытка {retry_count}/{MAX_RETRIES}: {e.error_reason}")
+                print(f"💡 Подсказка: {e.proposed_fix}")
+                print("🔄 Агент попробует снова...\n")
+                
+                self.db_service.save_message(
+                    self.current_session.id,
+                    "system",
+                    error_message
+                )
+                
+            except BrowserClosedError as e:
+                print(f"\n❌ {e.error_reason}")
+                print(f"💡 {e.proposed_fix}\n")
+                
+                self.db_service.save_message(
+                    self.current_session.id,
+                    "system",
+                    f"Browser closed: {e.error_reason}"
+                )
+                self.db_service.update_session_status(
+                    self.current_session.id,
+                    SessionStatus.FAILED
+                )
+                break
+                
+            except FunctionCallFormatError as e:
+                print(f"\n❌ Критическая ошибка: {e.error_reason}")
+                print(f"💡 Требуется: {e.proposed_fix}\n")
+                
+                self.db_service.save_message(
+                    self.current_session.id,
+                    "system",
+                    f"Critical error: {e.error_reason}. Required: {e.proposed_fix}"
+                )
+                self.db_service.update_session_status(
+                    self.current_session.id,
+                    SessionStatus.FAILED
+                )
+                break
+                
+            except DomainError as e:
+                print(f"\n❌ Ошибка: {e.error_reason}")
+                print(f"💡 Решение: {e.proposed_fix}\n")
+                
+                self.db_service.save_message(
+                    self.current_session.id,
+                    "system",
+                    f"Error: {e.error_reason}. Fix: {e.proposed_fix}"
+                )
+                self.db_service.update_session_status(
+                    self.current_session.id,
+                    SessionStatus.FAILED
+                )
+                break
+                
+            except Exception as e:
+                unknown_error = UnknownError(e)
+                log_error(unknown_error)
+                print(f"\n❌ {unknown_error.error_reason}")
+                print(f"💡 {unknown_error.proposed_fix}\n")
+                
+                self.db_service.save_message(
+                    self.current_session.id,
+                    "system",
+                    f"Unexpected error: {unknown_error.error_reason}"
+                )
+                self.db_service.update_session_status(
+                    self.current_session.id,
+                    SessionStatus.FAILED
+                )
+                break

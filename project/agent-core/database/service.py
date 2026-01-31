@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session as DBSession
 
+from config import config
 from .models import Base, SessionDB, MessageDB
 from models.session import Session, Message, SessionStatus
 
@@ -11,7 +12,9 @@ from models.session import Session, Message, SessionStatus
 class DatabaseService:
     """Service for managing database operations"""
     
-    def __init__(self, db_path: str = "agent_sessions.db"):
+    def __init__(self, db_path: Optional[str] = None):
+        if db_path is None:
+            db_path = config.database_path
         self.engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(self.engine)
         self.SessionLocal = sessionmaker(bind=self.engine)
