@@ -67,3 +67,8 @@ class PressKeyInput(BaseModel):
     key: str = Field(
         description="Key to press. Common keys: 'Enter' (submit forms), 'Tab' (next field), 'Escape' (close dialogs), 'ArrowDown'/'ArrowUp' (navigate lists)."
     )
+
+
+class WaitInput(BaseModel):
+    """Input schema for wait tool - no parameters needed."""
+    pass

@@ -5,6 +5,7 @@ from playwright.async_api import Page
 from tools.click_button import click_button
 from tools.type_text import type_text, fill_input
 from tools.press_key import press_key
+from tools.wait import wait
 from tools.get_page_text_next_item import get_page_text_next_item
 from tools.get_page_buttons_next_item import get_page_buttons_next_item
 from tools.get_page_links_next_item import get_page_links_next_item
@@ -14,6 +15,7 @@ from .tool_schemas import (
     FillInputArgs,
     TypeTextInput,
     PressKeyInput,
+    WaitInput,
     GetPageTextInput,
     GetPageButtonsInput,
     GetPageLinksInput,
@@ -107,6 +109,11 @@ def create_agent_tools(page: Page, browser_manager: "BrowserManager") -> List[St
         await browser_manager.go_back()
         return "Successfully navigated back"
     
+    @collect_tool_result("wait")
+    async def _wait() -> str:
+        result = await wait()
+        return f"{result['message']}"
+    
     tools = [
         StructuredTool.from_function(
             coroutine=_navigate,
@@ -161,6 +168,12 @@ def create_agent_tools(page: Page, browser_manager: "BrowserManager") -> List[St
             name="go_back",
             description="Navigate back in browser history.",
             args_schema=GoBackInput
+        ),
+        StructuredTool.from_function(
+            coroutine=_wait,
+            name="wait",
+            description="Wait for page to finish loading or browser verification. Use when you see 'checking browser', 'please wait', 'verifying' or similar loading/verification pages.",
+            args_schema=WaitInput
         ),
     ]
     

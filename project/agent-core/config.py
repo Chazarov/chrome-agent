@@ -24,7 +24,7 @@ class Config:
     def __init__(self):
         load_dotenv()
         
-        self.mode = AppMode.PRODUCTION
+        self.mode = AppMode.DEBUG
         
         self.groq_api_key: Optional[str] = os.getenv("GROQ_API_KEY")
         
@@ -38,6 +38,7 @@ class Config:
         self.parse_item_size: int = 1000  # Height in pixels for buttons/inputs sections
         self.text_chunk_size: int = 700   # Characters per text chunk
         self.links_chunk_size: int = 20   # Links per chunk
+        self.wait_delay: int = 5000  # Wait delay in milliseconds (5 seconds)
         
         self.agent_model: str = "openai/gpt-oss-120b"  # Production model with tool calling
         self.agent_temperature: float = 0.7

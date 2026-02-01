@@ -1,5 +1,8 @@
-from typing import Optional, Dict, List
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Playwright
+from typing import Optional, Dict, List, Any
+from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Playwright, TimeoutError as PlaywrightTimeout
+from playwright_stealth import Stealth
+
+from loguru import logger
 
 from config import config
 from agent.debug_tools import log_error
@@ -13,6 +16,8 @@ class BrowserManager:
     """Manages browser lifecycle using Playwright and page element storage"""
     
     def __init__(self):
+        self._stealth: Optional[Stealth] = None
+        self._stealth_context: Optional[Any] = None
         self._playwright: Optional[Playwright] = None
         self._browser: Optional[Browser] = None
         self._context: Optional[BrowserContext] = None
@@ -38,8 +43,10 @@ class BrowserManager:
         self._inputs_internal: Dict[int, InputInternal] = {}
         
     async def start(self):
-        """Start browser instance (always visible)"""
-        self._playwright = await async_playwright().start()
+        """Start browser instance with stealth mode (always visible)"""
+        self._stealth = Stealth()
+        self._stealth_context = self._stealth.use_async(async_playwright())
+        self._playwright = await self._stealth_context.__aenter__()
         self._browser = await self._playwright.chromium.launch(
             headless=False  # Always visible window
         )
@@ -60,8 +67,8 @@ class BrowserManager:
             await self._context.close()
         if self._browser:
             await self._browser.close()
-        if self._playwright:
-            await self._playwright.stop()
+        if self._stealth_context:
+            await self._stealth_context.__aexit__(None, None, None)
             
     async def navigate(self, url: str) -> None:
         """Navigate to URL"""
@@ -70,7 +77,11 @@ class BrowserManager:
             log_error(err)
             raise err
         await self._page.goto(url, wait_until='domcontentloaded')
-        await self._page.wait_for_load_state('networkidle', timeout=10000)
+        try:
+            await self._page.wait_for_load_state('networkidle', timeout=10000)
+        except PlaywrightTimeout:
+            if config.is_debug():
+                logger.debug(f"networkidle timeout for {url}, continuing anyway")
         
         # Reset all page items after navigation
         self.reset_text_items()
