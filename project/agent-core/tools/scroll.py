@@ -4,8 +4,10 @@ from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 from agent.debug_tools import log_error
 from exceptions.tool_execution import ToolExecutionError, ElementNotFoundError
 from exceptions.unknown_error import UnknownError
+from .utils import handle_browser_closed
 
 
+@handle_browser_closed
 async def scroll_page(
     page: Page, 
     direction: Literal["up", "down", "top", "bottom"] = "down",
@@ -43,6 +45,7 @@ async def scroll_page(
         raise err from e
 
 
+@handle_browser_closed
 async def scroll_to_element(page: Page, selector: str) -> Dict[str, Any]:
     """
     Scroll to a specific element on the page

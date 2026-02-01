@@ -4,8 +4,10 @@ from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 from agent.debug_tools import log_error
 from exceptions.tool_execution import ElementNotFoundError
 from exceptions.unknown_error import UnknownError
+from .utils import handle_browser_closed
 
 
+@handle_browser_closed
 async def click_button(page: Page, selector: str) -> Dict[str, Any]:
     """
     Click a button element by selector

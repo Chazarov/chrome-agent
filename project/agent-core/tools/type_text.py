@@ -4,8 +4,10 @@ from playwright.async_api import Page, TimeoutError as PlaywrightTimeout
 from agent.debug_tools import log_error
 from exceptions.tool_execution import ElementNotFoundError
 from exceptions.unknown_error import UnknownError
+from .utils import handle_browser_closed
 
 
+@handle_browser_closed
 async def type_text(page: Page, selector: str, text: str) -> Dict[str, Any]:
     """
     Type text into an input field (appends to existing content)
@@ -46,6 +48,7 @@ async def type_text(page: Page, selector: str, text: str) -> Dict[str, Any]:
         raise err from e
 
 
+@handle_browser_closed
 async def fill_input(page: Page, selector: str, text: str) -> Dict[str, Any]:
     """
     Fill an input field (clears existing content first)

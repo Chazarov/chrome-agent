@@ -5,8 +5,10 @@ from agent.debug_tools import log_error
 from models.page import Page as PageModel
 from parser.page_parser import PageParser
 from exceptions.unknown_error import UnknownError
+from .utils import handle_browser_closed
 
 
+@handle_browser_closed
 async def get_page_info(page: Page) -> Dict[str, Any]:
     """
     Get structured information about the current page
