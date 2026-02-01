@@ -30,8 +30,8 @@ class Config:
         
         self.database_path: str = "agent_sessions.db"
         
-        self.browser_viewport_width: int = 720
-        self.browser_viewport_height: int = 720
+        self.browser_viewport_width: int = 800
+        self.browser_viewport_height: int = 800
         self.browser_timeout: int = 30000 
         
         # Page parsing settings
