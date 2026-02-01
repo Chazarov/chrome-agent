@@ -24,7 +24,7 @@ class Config:
     def __init__(self):
         load_dotenv()
         
-        self.mode = AppMode.DEBUG
+        self.mode = AppMode.PRODUCTION
         
         self.groq_api_key: Optional[str] = os.getenv("GROQ_API_KEY")
         
@@ -39,6 +39,7 @@ class Config:
         self.agent_max_tokens: int = 2048
         self.agent_max_retries: int = 3
         self.agent_max_steps: int = 50
+        self.agent_reasoning_effort: str = "high"
     
     def validate(self) -> None:
         if not self.groq_api_key:

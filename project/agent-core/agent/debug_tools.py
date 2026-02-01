@@ -24,6 +24,17 @@ def print_llm_response(response: Any) -> None:
     print("LLM RESPONSE")
     print("="*80)
     
+    # Check for reasoning in both possible locations
+    reasoning_content = None
+    if hasattr(response, 'reasoning') and response.reasoning:
+        reasoning_content = response.reasoning
+    elif hasattr(response, 'additional_kwargs') and 'reasoning_content' in response.additional_kwargs:
+        reasoning_content = response.additional_kwargs['reasoning_content']
+    
+    if reasoning_content:
+        print("\nREASONING:")
+        print(reasoning_content)
+    
     if hasattr(response, 'content') and response.content:
         print("\nCONTENT:")
         print(response.content)

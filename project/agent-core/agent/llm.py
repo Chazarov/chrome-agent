@@ -25,5 +25,9 @@ def get_llm(api_key: Optional[str] = None) -> BaseChatModel:
         model=config.agent_model,
         api_key=api_key,
         temperature=config.agent_temperature,
-        max_tokens=config.agent_max_tokens
+        max_tokens=config.agent_max_tokens,
+        reasoning_effort=config.agent_reasoning_effort,
+        model_kwargs={
+            "include_reasoning": True
+        }
     )

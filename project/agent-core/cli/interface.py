@@ -164,6 +164,19 @@ class CLIInterface:
                         if node_name == "agent":
                             last_message = node_state["messages"][-1]
                             
+                            # Display model reasoning (check both possible locations)
+                            reasoning_content = None
+                            if hasattr(last_message, "reasoning") and last_message.reasoning:
+                                reasoning_content = last_message.reasoning
+                            elif hasattr(last_message, "additional_kwargs") and "reasoning_content" in last_message.additional_kwargs:
+                                reasoning_content = last_message.additional_kwargs["reasoning_content"]
+                            
+                            if reasoning_content:
+                                print(f"\n💭 Размышления модели:")
+                                print("-" * 60)
+                                print(reasoning_content)
+                                print("-" * 60 + "\n")
+                            
                             # Check for tool calls
                             if hasattr(last_message, "tool_calls") and last_message.tool_calls:
                                 for tool_call in last_message.tool_calls:
