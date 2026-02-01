@@ -46,3 +46,4 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+last-task-info.json

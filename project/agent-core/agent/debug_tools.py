@@ -4,7 +4,8 @@ Contains utilities for logging and debugging LLM responses.
 """
 
 import sys
-from typing import Any
+import functools
+from typing import Any, Optional, Callable
 from pathlib import Path
 from loguru import logger
 
@@ -72,3 +73,49 @@ def log_error(error: Exception) -> None:
     """
     if config.is_debug():
         logger.opt(depth=1).error(f"{error.__class__.__name__}: {error}")
+
+
+def extract_reasoning(response: Any) -> Optional[str]:
+    """
+    Extract reasoning content from LLM response.
+    Checks multiple possible locations where reasoning might be stored.
+    
+    Args:
+        response: LLM response object
+        
+    Returns:
+        Reasoning text if found, None otherwise
+    """
+    if hasattr(response, 'reasoning') and response.reasoning:
+        return response.reasoning
+    elif hasattr(response, 'additional_kwargs') and 'reasoning_content' in response.additional_kwargs:
+        return response.additional_kwargs['reasoning_content']
+    return None
+
+
+def collect_tool_result(tool_name: str):
+    """
+    Decorator for automatic collection of tool execution results.
+    Collects tool results when save_debug_info is enabled.
+    
+    Args:
+        tool_name: Name of the tool for identification in debug log
+        
+    Returns:
+        Decorated async function
+    """
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Execute function
+            result = await func(*args, **kwargs)
+            
+            # Collect result if debug mode enabled
+            if config.is_save_debug_info_enabled():
+                from agent.debug_collector import DebugCollector
+                collector = DebugCollector.get_instance()
+                collector.add_tool_result(tool_name, result)
+            
+            return result
+        return wrapper
+    return decorator

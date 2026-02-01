@@ -16,6 +16,7 @@ from .tool_schemas import (
     GetPageInfoInput,
     GoBackInput
 )
+from .debug_tools import collect_tool_result
 
 
 def create_agent_tools(page: Page) -> List[StructuredTool]:
@@ -29,48 +30,42 @@ def create_agent_tools(page: Page) -> List[StructuredTool]:
         List of configured tools
     """
     
+    @collect_tool_result("navigate")
     async def _navigate(url: str) -> str:
         result = await navigate(page, url)
         return f"{result['message']}"
     
+    @collect_tool_result("click_button")
     async def _click(selector: str) -> str:
         result = await click_button(page, selector)
         return f"{result['message']}"
     
+    @collect_tool_result("type_text")
     async def _type(selector: str, text: str) -> str:
         result = await type_text(page, selector, text)
         return f"{result['message']}"
     
+    @collect_tool_result("fill_input")
     async def _fill(selector: str, text: str) -> str:
         result = await fill_input(page, selector, text)
         return f"{result['message']}"
     
+    @collect_tool_result("get_page_info")
     async def _get_page() -> str:
+        import json
         result = await get_page_info(page)
         if result['success']:
             page_data = result['page']
-            # Format for LLM
-            output = f"URL: {page_data['url']}\n"
-            output += f"Title: {page_data['title']}\n\n"
-            output += f"Visible Text (preview):\n{page_data['visible_text'][:1000]}\n\n"
-            
-            if page_data['buttons']:
-                output += f"Buttons ({len(page_data['buttons'])}):\n"
-                for i, btn in enumerate(page_data['buttons'][:10]):
-                    output += f"  {i+1}. Text: '{btn['text']}' | Selector: {btn['selector']}\n"
-            
-            if page_data['links']:
-                output += f"\nLinks ({len(page_data['links'])}):\n"
-                for i, link in enumerate(page_data['links'][:10]):
-                    output += f"  {i+1}. Text: '{link['text']}' | URL: {link['url']}\n"
-            
-            return output
+            # Return full structured data as compact JSON
+            return json.dumps(page_data, ensure_ascii=False)
         return result['message']
     
+    @collect_tool_result("scroll_page")
     async def _scroll(direction: str = "down") -> str:
         result = await scroll_page(page, direction)
         return f"{result['message']}"
     
+    @collect_tool_result("go_back")
     async def _go_back() -> str:
         result = await go_back(page)
         return f"{result['message']}"
@@ -85,7 +80,7 @@ def create_agent_tools(page: Page) -> List[StructuredTool]:
         StructuredTool.from_function(
             coroutine=_get_page,
             name="get_page_info",
-            description="Get information about the current page including buttons, links, and text content. Use this first to understand what's on the page.",
+            description="Get structured JSON information about the current page including: url, title, visible_text, buttons (with text, selector, position, parent_text), and links (with text, url, selector, position, parent_text). Use this first to understand what's on the page. Returns complete JSON with all element data.",
             args_schema=GetPageInfoInput
         ),
         StructuredTool.from_function(

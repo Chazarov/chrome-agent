@@ -137,6 +137,12 @@ class CLIInterface:
             message
         )
         
+        # Reset debug collector for new prompt
+        if config.is_save_debug_info_enabled():
+            from agent.debug_collector import DebugCollector
+            collector = DebugCollector.get_instance()
+            collector.reset(message)
+        
         print(f"\n🤖 Агент думает...\n")
         
         # Create initial state
@@ -208,6 +214,14 @@ class CLIInterface:
                         break
                 
                 print("\n✓ Задача завершена.\n")
+                
+                # Mark debug task as completed (saves automatically)
+                if config.is_save_debug_info_enabled():
+                    from agent.debug_collector import DebugCollector
+                    collector = DebugCollector.get_instance()
+                    collector.mark_completed()
+                    print(f"  💾 Отладочная информация: {collector.output_path}\n")
+                
                 break
                 
             except ToolExecutionError as e:

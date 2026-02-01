@@ -8,7 +8,7 @@ from config import config
 from .state import AgentState
 from .llm import get_llm
 from .tools_config import create_agent_tools
-from .debug_tools import print_llm_response, log_error
+from .debug_tools import print_llm_response, log_error, extract_reasoning
 from exceptions.function_call_format import FunctionCallFormatError
 
 
@@ -74,6 +74,24 @@ def create_agent_graph(page: Page, api_key: str):
             
             if config.is_debug():
                 print_llm_response(response)
+            
+            # Collect debug information if enabled
+            if config.is_save_debug_info_enabled():
+                from .debug_collector import DebugCollector
+                collector = DebugCollector.get_instance()
+                
+                # Collect reasoning
+                reasoning_content = extract_reasoning(response)
+                if reasoning_content:
+                    collector.add_reasoning(reasoning_content)
+                
+                # Collect tool calls
+                if hasattr(response, 'tool_calls') and response.tool_calls:
+                    for tool_call in response.tool_calls:
+                        collector.add_tool_call(
+                            tool_call.get('name', 'unknown'),
+                            tool_call.get('args', {})
+                        )
                 
         except Exception as e:
             error_str = str(e)
