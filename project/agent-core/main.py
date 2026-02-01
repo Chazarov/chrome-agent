@@ -35,7 +35,7 @@ async def main():
         print("✓ Браузер запущен\n")
         
         # Create agent graph
-        agent_graph = create_agent_graph(browser_manager.page, config.groq_api_key)
+        agent_graph = create_agent_graph(browser_manager.page, browser_manager, config.groq_api_key)
         
         # Start CLI
         cli = CLIInterface(db_service)

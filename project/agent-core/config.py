@@ -34,7 +34,12 @@ class Config:
         self.browser_viewport_height: int = 720
         self.browser_timeout: int = 30000 
         
-        self.agent_model: str = "openai/gpt-oss-20b"  # Production model with tool calling
+        # Page parsing settings
+        self.parse_item_size: int = 1000  # Height in pixels for buttons/inputs sections
+        self.text_chunk_size: int = 700   # Characters per text chunk
+        self.links_chunk_size: int = 20   # Links per chunk
+        
+        self.agent_model: str = "openai/gpt-oss-120b"  # Production model with tool calling
         self.agent_temperature: float = 0.7
         self.agent_max_tokens: int = 2048
         self.agent_max_retries: int = 3

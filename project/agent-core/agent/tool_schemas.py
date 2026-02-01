@@ -17,15 +17,15 @@ class NavigateInput(BaseModel):
 
 class ClickButtonInput(BaseModel):
     """Input schema for click_button tool."""
-    selector: str = Field(
-        description="CSS selector of the element to click (e.g., '#submit-btn', '.button-class', 'button[type=\"submit\"]')"
+    button_id: int = Field(
+        description="ID of the button to click. Get button IDs from get_page_buttons_next_item tool."
     )
 
 
 class FillInputArgs(BaseModel):
     """Input schema for fill_input tool."""
-    selector: str = Field(
-        description="CSS selector of the input field to fill"
+    input_id: int = Field(
+        description="ID of the input field to fill. Get input IDs from get_page_buttons_next_item tool."
     )
     text: str = Field(
         description="Text to fill into the input field (clears existing content first)"
@@ -34,27 +34,36 @@ class FillInputArgs(BaseModel):
 
 class TypeTextInput(BaseModel):
     """Input schema for type_text tool."""
-    selector: str = Field(
-        description="CSS selector of the input field"
+    input_id: int = Field(
+        description="ID of the input field. Get input IDs from get_page_buttons_next_item tool."
     )
     text: str = Field(
         description="Text to type into the field (appends to existing content)"
     )
 
 
-class ScrollPageInput(BaseModel):
-    """Input schema for scroll_page tool."""
-    direction: Literal["up", "down", "top", "bottom"] = Field(
-        default="down",
-        description="Direction to scroll: 'up' - scroll up, 'down' - scroll down, 'top' - scroll to page top, 'bottom' - scroll to page bottom"
-    )
+class GetPageTextInput(BaseModel):
+    """Input schema for get_page_text_next_item tool - no parameters needed."""
+    pass
 
 
-class GetPageInfoInput(BaseModel):
-    """Input schema for get_page_info tool - no parameters needed."""
+class GetPageButtonsInput(BaseModel):
+    """Input schema for get_page_buttons_next_item tool - no parameters needed."""
+    pass
+
+
+class GetPageLinksInput(BaseModel):
+    """Input schema for get_page_links_next_item tool - no parameters needed."""
     pass
 
 
 class GoBackInput(BaseModel):
     """Input schema for go_back tool - no parameters needed."""
     pass
+
+
+class PressKeyInput(BaseModel):
+    """Input schema for press_key tool."""
+    key: str = Field(
+        description="Key to press. Common keys: 'Enter' (submit forms), 'Tab' (next field), 'Escape' (close dialogs), 'ArrowDown'/'ArrowUp' (navigate lists)."
+    )
