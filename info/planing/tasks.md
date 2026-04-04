@@ -1,6 +1,10 @@
 
 # Current Tasks
 
+##
+
+1) Перенести задачи в  ```app.weeek.net``` - использовать таск менеджер
+
 ## Bugs
 
 no-tasks
