@@ -1,0 +1,15 @@
+services:
+  s_sobagent_landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: s_sobagent_landing
+    expose:
+      - "80"
+    networks:
+      - gateway_network
+    restart: unless-stopped
+
+networks:
+  gateway_network:
+    external: true
