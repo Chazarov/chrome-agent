@@ -11,7 +11,7 @@ from typing import Literal
 class NavigateInput(BaseModel):
     """Input schema for navigate tool."""
     url: str = Field(
-        description="URL to navigate to (e.g., 'https://example.com' or 'google.com'). Protocol (https://) will be added automatically if missing."
+        description="URL to navigate to (e.g., 'https://example.com' or 'google.com')."
     )
 
 

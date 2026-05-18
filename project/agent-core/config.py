@@ -8,6 +8,9 @@ from enum import Enum
 from typing import Optional
 from dotenv import load_dotenv
 
+def get_system_promt() -> str:
+    with open("system_promt.md", encoding="utf-8") as file:
+        return file.read()
 
 class AppMode(Enum):
     """Application execution mode"""
@@ -46,6 +49,7 @@ class Config:
         self.agent_max_retries: int = 3
         self.agent_max_steps: int = 50
         self.agent_reasoning_effort: str = "high"
+        self.system_promt: str = get_system_promt()
         
         self.save_debug_info: bool = True  # Enable for debugging: True
     
