@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "User Service API",
+    "description": "API коллекция для сервиса пользователей — аутентификация и управление пользователями",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.shop.develop.zaharow.ru/user",
+      "type": "string",
+      "description": "Base URL для User Service API"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "description": "Access token для авторизации (получается после login/register)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Эндпоинты для аутентификации (регистрация и вход). Авторизация не требуется.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"secret123\",\n  \"device_name\": \"Postman Test Device\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+79001234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Регистрация нового пользователя в системе. Возвращает access_token в теле и refresh_token в cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe\",\n  \"password\": \"secret123\",\n  \"device_name\": \"Postman Test Device\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Авторизация пользователя. Возвращает access_token в теле и refresh_token в cookie."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "description": "Эндпоинты для авторизованных пользователей. Все запросы требуют заголовок Authorization: Bearer <access_token>.",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/me",
+              "host": ["{{base_url}}"],
+              "path": ["user", "me"]
+            },
+            "description": "Получение данных текущего пользователя по device UUID из JWT-токена."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/logout",
+              "host": ["{{base_url}}"],
+              "path": ["user", "logout"]
+            },
+            "description": "Выход из системы. Удаляет сессию устройства и refresh_token из cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["user", "refresh"]
+            },
+            "description": "Обновление токенов. Refresh-token передаётся через cookie, новый refresh_token устанавливается в cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"secret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/user/me",
+              "host": ["{{base_url}}"],
+              "path": ["user", "me"]
+            },
+            "description": "Полное удаление аккаунта пользователя. Требует подтверждения текущим паролем."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Проверка состояния сервиса.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Проверка доступности сервиса."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

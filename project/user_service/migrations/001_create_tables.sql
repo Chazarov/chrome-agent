@@ -1,0 +1,26 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS devices (
+    id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_name VARCHAR(255),
+    refresh_token TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_used TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_verifications (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    phone_number VARCHAR(255) UNIQUE,
+    email VARCHAR(255) UNIQUE
+);
