@@ -19,6 +19,12 @@ export default function SiteHeader() {
           <Link className="btn btn-ghost" to="/" state={{ scrollTo: "contact" }}>
             Контакты
           </Link>
+          <a
+            className="btn btn-ghost"
+            href={import.meta.env.VITE_APP_URL ?? "https://sobagent.ru/us/"}
+          >
+            Войти
+          </a>
           <a className="btn btn-primary" href={zipHref} download={ZIP_NAME}>
             Скачать архив
           </a>

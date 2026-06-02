@@ -41,6 +41,20 @@ services:
       - backend-network
       - gateway_network
 
+  sobagent-frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: sobagent-frontend
+    expose:
+      - "80"
+    depends_on:
+      - sobagent-user-service
+    networks:
+      - gateway_network
+    restart: unless-stopped
+
   postgres:
     image: postgres:15-alpine
     container_name: sobagent-postgres
