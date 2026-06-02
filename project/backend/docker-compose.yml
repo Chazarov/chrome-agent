@@ -1,0 +1,61 @@
+x-environment: &api-env
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+  JWT_ACCESS_TOKEN_EXPIRES_IN: 604800s # 7 days
+  JWT_REFRESH_TOKEN_EXPIRES_IN: 5184000s # 60 days
+  CORS_ENABLED: "false"
+  # CORS_ALLOW_ALL_ORIGINS: false
+  # CORS_ALLOW_ORIGINS: https://narodbazar.ru
+  # CORS_ALLOW_METHODS: GET,POST,PUT,DELETE
+  # CORS_ALLOW_HEADERS: Origin,Content-Type,Authorization
+  # CORS_ALLOW_CREDENTIALS: true
+  # CORS_EXPOSE_HEADERS: Content-Length
+
+services:
+
+  sobagent-user-service:
+      build: 
+        context: ./user_service
+        args:
+          GIT_PERSONAL_ACCESS_TOKEN: ${GIT_PERSONAL_ACCESS_TOKEN}
+          GIT_USERNAME: ${GIT_USERNAME}
+      command: ["./main"]
+      env_file:
+        - ./.env
+      environment:
+        <<: *api-env
+        PSQL_DB_PASSWORD: ${PSQL_DB_PASSWORD}
+        PSQL_DB_HOST: postgres
+        PSQL_DB_PORT: 5433
+        PSQL_DB_SCHEMA: "user_service_schema"
+        PSQL_DB_USERNAME: "app"
+        PSQL_DB_NAME: "sobagent_db"
+        PSQL_DB_SSL_MODE: disable
+        SERVER_PORT: 8080
+        SERVER_HOST: 0.0.0.0
+      restart: unless-stopped
+      depends_on:
+        - postgres
+      networks:
+        - backend-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sobagent_db
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${PSQL_DB_PASSWORD}
+      PGPORT: 5433
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/postgres_init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - backend-network
+
+
+
+networks:
+  backend-network:
+    driver: bridge 
+  gateway_network:
+    external: true
