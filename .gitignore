@@ -31,7 +31,6 @@ DjangoMigrationTest.db
 *.test
 *.out
 bin/
-pkg/
 vendor/
 *.a
 *.lib
