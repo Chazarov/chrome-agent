@@ -9,6 +9,7 @@ env/
 venv/
 ENV/
 .venv/
+.vscode/
 *.egg-info/
 dist/
 build/
@@ -56,7 +57,12 @@ build/
 
 # ===== Общие / IDE =====
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+project/agent-core-v2/.vscode/*
+!project/agent-core-v2/.vscode/settings.json
+!project/agent-core-v2/.vscode/extensions.json
 *.swp
 *.swo
 *~

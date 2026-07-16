@@ -1,0 +1,22 @@
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true
+files = [
+    "config.py",
+    "main.py",
+    "domain",
+    "infrastructure",
+]
+mypy_path = "."
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "dotenv.*",
+]
+ignore_missing_imports = true

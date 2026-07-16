@@ -1,10 +1,7 @@
-from config import config
 from domain.core.container import Container
 
 
-def main():
-    
-
+def main() -> None:
     print("🚀 Тестовый запрос с tool calling к Yandex AI Agent...")
 
     container = Container()

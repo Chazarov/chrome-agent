@@ -3,16 +3,19 @@ from typing import Any, Callable
 
 import openai
 
+ToolSpec = dict[str, Any]
+ToolHandler = Callable[..., Any]
+
 
 class YandexAgentConnector:
-    def __init__(self, api_key: str, url: str, yandex_cloude_folder: str, model: str):
+    def __init__(self, api_key: str, url: str, yandex_cloude_folder: str, model: str) -> None:
         self._api_key = api_key
         self._url = url
         self._project_id = yandex_cloude_folder
         self._model = model
         self._make_client()
 
-    def _make_client(self):
+    def _make_client(self) -> None:
         self._client = openai.OpenAI(
             api_key=self._api_key,
             base_url=self._url,
@@ -24,13 +27,13 @@ class YandexAgentConnector:
 
     def create_response(
         self,
-        input: str | list,
-        tools: list[dict] | None = None,
+        input: str | list[Any],
+        tools: list[ToolSpec] | None = None,
         instructions: str = "",
         previous_response_id: str | None = None,
         temperature: float = 0.3,
         max_output_tokens: int = 500,
-    ):
+    ) -> Any:
         kwargs: dict[str, Any] = {
             "model": self._model_uri(),
             "temperature": temperature,
@@ -47,7 +50,7 @@ class YandexAgentConnector:
         return self._client.responses.create(**kwargs)
 
     @staticmethod
-    def get_function_calls(response) -> list:
+    def get_function_calls(response: Any) -> list[Any]:
         return [
             item
             for item in getattr(response, "output", [])
@@ -59,9 +62,9 @@ class YandexAgentConnector:
         previous_response_id: str,
         call_id: str,
         output: str,
-        tools: list[dict],
+        tools: list[ToolSpec],
         instructions: str = "",
-    ):
+    ) -> Any:
         return self.create_response(
             input=[
                 {
@@ -78,8 +81,8 @@ class YandexAgentConnector:
     def run_with_tools(
         self,
         input_text: str,
-        tools: list[dict],
-        handlers: dict[str, Callable[..., Any]],
+        tools: list[ToolSpec],
+        handlers: dict[str, ToolHandler],
         instructions: str = "",
     ) -> str:
         response = self.create_response(
@@ -90,7 +93,7 @@ class YandexAgentConnector:
 
         calls = self.get_function_calls(response)
         if not calls:
-            return response.output_text
+            return str(response.output_text)
 
         for call in calls:
             handler = handlers.get(call.name)
@@ -98,6 +101,9 @@ class YandexAgentConnector:
                 continue
 
             args = json.loads(getattr(call, "arguments", "{}") or "{}")
+            if not isinstance(args, dict):
+                raise TypeError(f"Ожидался dict аргументов для {call.name}, получено {type(args)}")
+
             result = handler(**args)
             output = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False)
 
@@ -109,10 +115,10 @@ class YandexAgentConnector:
                 instructions=instructions,
             )
 
-        return response.output_text
+        return str(response.output_text)
 
-    def test(self):
-        tools = [
+    def test(self) -> str:
+        tools: list[ToolSpec] = [
             {
                 "type": "function",
                 "name": "get_weather",
