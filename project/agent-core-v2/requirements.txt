@@ -1,3 +1,6 @@
 openai
 python-dotenv
 mypy
+playwright
+playwright-stealth
+pydantic
