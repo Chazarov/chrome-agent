@@ -1,104 +1,55 @@
 from __future__ import annotations
 
+import base64
+import json
+from pathlib import Path
+
 from playwright.sync_api import Page
 
 from domain.interfaces.notificator import Notificator
 from domain.models import DangerLevel, DangerReason
 
-WIDGET_INIT_SCRIPT = """
-(() => {
-    if (window.__chromeAgentWidgetInstalled) return;
-    window.__chromeAgentWidgetInstalled = true;
+STATIC_DIR = Path(__file__).resolve().parents[2] / "static"
+COMPONENTS_DIR = Path(__file__).parent / "components"
+MASCOT_IMAGE_COUNT = 5
 
-    const ensureWidget = () => {
-        let widget = document.getElementById('chrome-agent-status-widget');
-        if (widget) return widget;
+WIDGET_INIT_SCRIPT_TEMPLATE = (COMPONENTS_DIR / "init_widjet.js").read_text()
 
-        const style = document.createElement('style');
-        style.textContent = `
-            #chrome-agent-status-widget {
-                position: fixed;
-                top: 12px;
-                right: 12px;
-                z-index: 2147483647;
-                width: 72px;
-                height: 72px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 6px;
-                border-radius: 4px;
-                box-sizing: border-box;
-                color: #fff;
-                font: 600 11px/1.2 system-ui, sans-serif;
-                text-align: center;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-                pointer-events: none;
-                user-select: none;
-            }
-        `;
-        (document.head || document.documentElement).appendChild(style);
+UPDATE_WIDGET_SCRIPT = (COMPONENTS_DIR / "update_widjet.js").read_text()
 
-        widget = document.createElement('div');
-        widget.id = 'chrome-agent-status-widget';
-        widget.setAttribute('role', 'status');
-        widget.setAttribute('aria-live', 'polite');
-        widget.textContent = 'Агент';
-        widget.style.backgroundColor = '#64748b';
-        (document.body || document.documentElement).appendChild(widget);
-        return widget;
-    };
 
-    window.__chromeAgentUpdateStatusWidget = (payload) => {
-        const widget = ensureWidget();
-        widget.textContent = payload.label;
-        widget.style.backgroundColor = payload.color;
-        if (payload.description) {
-            widget.setAttribute('aria-label', payload.description);
-            widget.title = payload.description;
-        }
-    };
+WARNING_IMAGE_KEY = 5
 
-    const boot = () => ensureWidget();
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
-})();
-"""
 
-UPDATE_WIDGET_SCRIPT = """
-(payload) => {
-    if (typeof window.__chromeAgentUpdateStatusWidget === 'function') {
-        window.__chromeAgentUpdateStatusWidget(payload);
-    }
-}
-"""
+def _load_mascot_data_urls() -> dict[int, str]:
+    images: dict[int, str] = {}
+    for index in range(1, MASCOT_IMAGE_COUNT + 1):
+        path = STATIC_DIR / f"{index}.png"
+        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+        images[index] = f"data:image/png;base64,{encoded}"
+    return images
 
-DANGER_LEVEL_COLORS: dict[int, str] = {
-    0: "#22c55e",
-    1: "#eab308",
-    2: "#f97316",
-    3: "#ef4444",
-}
 
-DEFAULT_COLOR = "#64748b"
-WARNING_COLOR = "#f97316"
+def _build_widget_init_script(mascot_images: dict[int, str]) -> str:
+    return WIDGET_INIT_SCRIPT_TEMPLATE.format(
+        mascot_images_json=json.dumps(mascot_images),
+    )
+
+
+def _image_key_for_level(level_id: int) -> int:
+    return min(max(level_id + 1, 1), MASCOT_IMAGE_COUNT)
 
 
 class PlaywrightDangerNotificator(Notificator):
     def __init__(self, page: Page) -> None:
         self._page = page
+        self._mascot_images = _load_mascot_data_urls()
+        self._widget_init_script = _build_widget_init_script(self._mascot_images)
         self._attach_widget()
 
     def _attach_widget(self) -> None:
-        self._page.context.add_init_script(WIDGET_INIT_SCRIPT)
-        self._page.evaluate(WIDGET_INIT_SCRIPT)
-
-    def _color_for_level(self, level_id: int) -> str:
-        return DANGER_LEVEL_COLORS.get(level_id, DEFAULT_COLOR)
+        self._page.context.add_init_script(self._widget_init_script)
+        self._page.evaluate(self._widget_init_script)
 
     def danger_level_notify(
         self,
@@ -108,10 +59,10 @@ class PlaywrightDangerNotificator(Notificator):
         self._page.evaluate(
             UPDATE_WIDGET_SCRIPT,
             {
-                "label": danger_level.name,
-                "color": self._color_for_level(danger_level.id),
+                "imageKey": _image_key_for_level(danger_level.id),
                 "description": (
-                    f"{danger_level.description}. {reason.description}"
+                    f"{danger_level.name}. {danger_level.description}. "
+                    f"{reason.name}. {reason.description}"
                 ),
             },
         )
@@ -120,8 +71,7 @@ class PlaywrightDangerNotificator(Notificator):
         self._page.evaluate(
             UPDATE_WIDGET_SCRIPT,
             {
-                "label": "Внимание",
-                "color": WARNING_COLOR,
+                "imageKey": WARNING_IMAGE_KEY,
                 "description": warning,
             },
         )
